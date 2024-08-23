@@ -1,5 +1,5 @@
 import { Module } from '@nestjs/common';
-import { MongooseModule } from '@nestjs/mongoose';
+import { TypeOrmModule } from '@nestjs/typeorm';
 import { ConfigModule } from '@nestjs/config';
 import { BlogModule } from './features/blogs/blog.module';
 import { TestingModule } from './features/testing/testing.module';
@@ -14,17 +14,15 @@ import { MainConfigModule } from './settings/config.module';
     ConfigModule.forRoot({
       isGlobal: true,
     }),
-    MongooseModule.forRootAsync({
-      useFactory: async () => {
-        const dbName = appSettings.env.isTesting()
-          ? appSettings.api.DB_NAME_TEST
-          : appSettings.api.DB_NAME;
-
-        return {
-          uri: appSettings.api.MONGO_DB_ATLAS,
-          dbName: dbName,
-        };
-      },
+    TypeOrmModule.forRoot({
+      type: 'postgres',
+      host: 'localhost',
+      port: 5432,
+      username: 'nodejs',
+      password: 'nodejs',
+      database: 'BlogPosts',
+      autoLoadEntities: false,
+      synchronize: false,
     }),
     BlogModule,
     AuthUserModule,
