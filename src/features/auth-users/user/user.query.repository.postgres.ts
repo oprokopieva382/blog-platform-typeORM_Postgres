@@ -22,42 +22,59 @@ export class UserQueryRepositoryPostgres {
   async getUsers(
     query: UserQueryModel,
   ): Promise<PaginatorModel<UserViewModel>> {
-    // const searchByLogin = query.searchLoginTerm
-    //   ? { login: { $regex: query.searchLoginTerm, $options: 'i' } }
-    //   : {};
+    const searchLoginTerm = query.searchLoginTerm
+      ? `%${query.searchLoginTerm.toLowerCase()}%`
+      : '';
+    const searchEmailTerm = query.searchEmailTerm
+      ? `%${query.searchEmailTerm.toLowerCase()}%`
+      : '';
 
-    // const searchByEmail = query.searchEmailTerm
-    //   ? { email: { $regex: query.searchEmailTerm, $options: 'i' } }
-    //   : {};
+    const whereConditions = [];
+    if (searchLoginTerm)
+      whereConditions.push(`LOWER(login) LIKE '${searchLoginTerm}'`);
+    if (searchEmailTerm)
+      whereConditions.push(`LOWER(email) LIKE '${searchEmailTerm}'`);
 
-    // const totalUsersCount = await this.UserModel.countDocuments({
-    //   $or: [{ ...searchByLogin }, { ...searchByEmail }],
-    // });
+    const whereClause = whereConditions.length
+      ? `WHERE ${whereConditions.join(' OR ')}`
+      : '';
 
-    // const users = await this.UserModel.find({
-    //   $or: [{ ...searchByLogin }, { ...searchByEmail }],
-    // })
-    //   .skip((query.pageNumber - 1) * query.pageSize)
-    //   .limit(query.pageSize)
-    //   .sort({
-    //     [query.sortBy]:
-    //       query.sortDirection === '1' ? SortDirection.asc : SortDirection.desc,
-    //   });
+    const totalUsersCountQuery = `
+    SELECT COUNT(*)
+    FROM "User"
+    ${whereClause}
+  `;
 
-    // const usersToView = {
-    //   pagesCount: Math.ceil(totalUsersCount / query.pageSize),
-    //   page: query.pageNumber,
-    //   pageSize: query.pageSize,
-    //   totalCount: totalUsersCount,
-    //   items: await Promise.all(
-    //     users.map((u) => this.TransformUser.transformToViewModel(u)),
-    //   ),
-    // };
-    // return usersToView;
-    return this.dataSource.query(`
-      SELECT *
-      FROM "User"
-      `)
+    const totalUsersCountResult =
+      await this.dataSource.query(totalUsersCountQuery);
+
+    const totalUsersCount = parseInt(totalUsersCountResult[0].count, 10);
+
+    const offset = (query.pageNumber - 1) * query.pageSize;
+    const limit = query.pageSize;
+
+    const usersQuery = `
+  SELECT * 
+  FROM "User"
+  ${whereClause}
+  ORDER BY "${query.sortBy}" ${query.sortDirection === 'asc' ? 'ASC' : 'DESC'}
+  OFFSET ${offset}
+  LIMIT ${limit}
+`;
+
+    const users = await this.dataSource.query(usersQuery);
+    console.log(users)
+
+    const usersToView = {
+      pagesCount: Math.ceil(totalUsersCount / query.pageSize),
+      page: query.pageNumber,
+      pageSize: query.pageSize,
+      totalCount: totalUsersCount,
+      items: await Promise.all(
+        users.map((u) => this.TransformUser.transformToViewModel(u)),
+      ),
+    };
+    return usersToView;
   }
 
   async getByIdUser(id: string) {
