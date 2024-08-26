@@ -20,6 +20,7 @@ import { CommandBus } from '@nestjs/cqrs';
 import { CreateUserCommand } from './use-cases/createUser-use.case';
 import { DeleteUserCommand } from './use-cases/deleteUser-use.case';
 import { AdminAuthGuard } from '../auth/guards/admin-auth.guard';
+import { UserQueryRepositoryPostgres } from './user.query.repository.postgres';
 
 @Controller('users')
 @UseGuards(AdminAuthGuard)
@@ -27,13 +28,17 @@ export class UserController {
   constructor(
     protected userService: UserService,
     protected userQueryRepository: UserQueryRepository,
+    protected UserQueryRepositoryPostgres: UserQueryRepositoryPostgres,
     private readonly TransformUser: TransformUser,
     private readonly commandBus: CommandBus,
   ) {}
 
   @Get()
   async getUsers(@Query() query: UserQueryModel) {
-    return await this.userQueryRepository.getUsers(userQueryFilter(query));
+    //return await this.userQueryRepository.getUsers(userQueryFilter(query));
+    return await this.UserQueryRepositoryPostgres.getUsers(
+      userQueryFilter(query),
+    );
   }
 
   @Post()

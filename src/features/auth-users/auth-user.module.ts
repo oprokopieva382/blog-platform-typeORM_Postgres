@@ -1,15 +1,9 @@
-import { Module } from '@nestjs/common';
-import { MongooseModule } from '@nestjs/mongoose';
+import { Module} from '@nestjs/common';
 import { CqrsModule } from '@nestjs/cqrs';
 import { PassportModule } from '@nestjs/passport';
 import { JwtModule } from '@nestjs/jwt';
 import { EmailService } from 'src/base/application/email.service';
-import {
-  PasswordRecoveryCode,
-  PasswordRecoveryCodeSchema,
-} from './auth/schemas/PasswordRecoveryCode.schema';
-import { AppSettings, appSettings } from 'src/settings/app-settings';
-import { User, UserSchema } from './user/schemas/User.schema';
+import { appSettings } from 'src/settings/app-settings';
 import { UserController } from './user/user.controller';
 import { AuthController } from './auth/auth.controller';
 import { AuthService } from './auth/auth.service';
@@ -28,7 +22,6 @@ import { PasswordRecoveryUseCase } from './auth/use-cases/passwordRecovery-use-c
 import { CreateUserUseCase } from './user/use-cases/createUser-use.case';
 import { DeleteUserUseCase } from './user/use-cases/deleteUser-use.case';
 import { TransformUser } from './user/DTOs/output/TransformUser';
-import { Session, SessionSchema } from './auth/schemas/Session.schema';
 import {  CreateSessionUseCase } from './auth/use-cases/createSession-use-case';
 import { TokenService } from 'src/base/application/jwt.service';
 import { SetNewTokensUseCase } from './auth/use-cases/setNewTokens-use-case';
@@ -40,10 +33,17 @@ import { DeleteDeviceByIdUseCase } from './securityDevices/use-cases/deleteDevic
 import { TransformDevice } from './securityDevices/DTOs/output/TransformDevice';
 import { DeviceRepository } from './securityDevices/device.repository';
 import { DeviceController } from './securityDevices/device.controller';
+import { TypeOrmModule } from '@nestjs/typeorm';
+import { MongooseModule } from '@nestjs/mongoose';
+import { PasswordRecoveryCode, PasswordRecoveryCodeSchema } from './auth/schemas/PasswordRecoveryCode.schema';
+import { User, UserSchema } from './user/schemas/User.schema';
+import { Session, SessionSchema } from './auth/schemas/Session.schema';
+import { UserQueryRepositoryPostgres } from './user/user.query.repository.postgres';
 
 @Module({
   imports: [
     CqrsModule,
+    TypeOrmModule.forFeature([]),
     MongooseModule.forFeature([
       {
         name: PasswordRecoveryCode.name,
@@ -74,6 +74,7 @@ import { DeviceController } from './securityDevices/device.controller';
     UserRepository,
     DeviceRepository,
     UserQueryRepository,
+    UserQueryRepositoryPostgres,
     DeviceQueryRepository,
     LocalStrategy,
     JwtStrategy,

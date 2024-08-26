@@ -7,6 +7,7 @@ import { AuthUserModule } from './features/auth-users/auth-user.module';
 import { ThrottlerModule } from '@nestjs/throttler';
 import { appSettings } from './settings/app-settings';
 import { MainConfigModule } from './settings/config.module';
+import { MongooseModule } from '@nestjs/mongoose';
 
 @Module({
   imports: [
@@ -23,6 +24,18 @@ import { MainConfigModule } from './settings/config.module';
       database: 'BlogPosts',
       autoLoadEntities: false,
       synchronize: false,
+    }),
+    MongooseModule.forRootAsync({
+      useFactory: async () => {
+        const dbName = appSettings.env.isTesting()
+          ? appSettings.api.DB_NAME_TEST
+          : appSettings.api.DB_NAME;
+
+        return {
+          uri: appSettings.api.MONGO_DB_ATLAS,
+          dbName: dbName,
+        };
+      },
     }),
     BlogModule,
     AuthUserModule,
