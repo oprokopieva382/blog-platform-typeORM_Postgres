@@ -22,18 +22,26 @@ export class AuthRepository {
     @InjectDataSource() private dataSource: DataSource,
   ) {}
 
-  async getByLoginOrEmail(login: string, email: string) {
-    return await this.UserModel.findOne({
-      $or: [{ email }, { login }],
-    });
-  }
+   async getByLogin(login: string) {
+    const query = `
+    SELECT u.login, u.id 
+    FROM "User" u
+    WHERE u.login = $1
+    `;
 
-  async getByLogin(login: string) {
-    return await this.UserModel.findOne({ login });
+    const result = await this.dataSource.query(query, [login]);
+    return result[0];
   }
 
   async getByEmail(email: string) {
-    return await this.UserModel.findOne({ email });
+     const query = `
+    SELECT u.email, u.id 
+    FROM "User" u
+    WHERE u.email = $1
+    `;
+
+     const result = await this.dataSource.query(query, [email]);
+     return result[0];
   }
 
   async getByConfirmationCode(code: string) {
@@ -66,7 +74,7 @@ export class AuthRepository {
   }
 
   async registerUser(dto: UserDBType) {
-  const query = `
+    const query = `
   INSERT INTO "User" ("login", "email", "password", "createdAt", "confirmationCode", "expirationDate", "isConfirmed")
   VALUES ($1, $2, $3, $4, $5, $6, $7)
   RETURNING *;
@@ -83,7 +91,7 @@ export class AuthRepository {
     ];
 
     const result = await this.dataSource.query(query, values);
-    return result[0]
+    return result[0];
   }
 
   async savePasswordRecoveryInfo(passwordRecovery: PasswordRecoveryCode) {
