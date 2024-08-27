@@ -63,7 +63,7 @@ export class UserQueryRepositoryPostgres {
 `;
 
     const users = await this.dataSource.query(usersQuery);
-    console.log(users)
+    console.log(users);
 
     const usersToView = {
       pagesCount: Math.ceil(totalUsersCount / query.pageSize),
@@ -80,5 +80,14 @@ export class UserQueryRepositoryPostgres {
   async getByIdUser(id: string) {
     const user = await this.UserModel.findById(id);
     return transformToViewUser(user);
+    // const query = `
+    // SELECT *
+    // FROM "User"
+    // WHERE id=$1
+    // LIMIT 1
+    // `;
+
+    // const result = await this.dataSource.query(query, [id]);
+    // console.log(result);
   }
 }
