@@ -6,8 +6,10 @@ import {
   PasswordRecoveryCodeDocument,
 } from './schemas/PasswordRecoveryCode.schema';
 import { User, UserDocument } from '../user/schemas/User.schema';
-import { UserInputModel } from '../user/DTOs/input/UserInputModel.dto';
 import { Session, SessionDocument } from './schemas/Session.schema';
+import { UserDBType } from 'src/base/types/UserDBType';
+import { DataSource } from 'typeorm';
+import { InjectDataSource } from '@nestjs/typeorm';
 
 @Injectable()
 export class AuthRepository {
@@ -17,6 +19,7 @@ export class AuthRepository {
     private readonly SessionModel: Model<SessionDocument>,
     @InjectModel(PasswordRecoveryCode.name)
     private readonly PasswordRecoveryCodeModel: Model<PasswordRecoveryCodeDocument>,
+    @InjectDataSource() private dataSource: DataSource,
   ) {}
 
   async getByLoginOrEmail(login: string, email: string) {
@@ -62,9 +65,25 @@ export class AuthRepository {
     );
   }
 
-  async registerUser(dto: UserInputModel) {
-    const newUser = new this.UserModel(dto);
-    return await newUser.save();
+  async registerUser(dto: UserDBType) {
+  const query = `
+  INSERT INTO "User" ("login", "email", "password", "createdAt", "confirmationCode", "expirationDate", "isConfirmed")
+  VALUES ($1, $2, $3, $4, $5, $6, $7)
+  RETURNING *;
+  `;
+
+    const values = [
+      dto.login,
+      dto.email,
+      dto.password,
+      dto.createdAt,
+      dto.confirmationCode,
+      dto.expirationDate,
+      dto.isConfirmed,
+    ];
+
+    const result = await this.dataSource.query(query, values);
+    return result[0]
   }
 
   async savePasswordRecoveryInfo(passwordRecovery: PasswordRecoveryCode) {

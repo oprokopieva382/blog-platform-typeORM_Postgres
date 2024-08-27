@@ -9,7 +9,7 @@ export class TransformUser {
 
   async transformToViewModel(user: UserDocument): Promise<UserViewModel> {
     return {
-      id: user._id.toString(),
+      id: user.id,
       login: user.login,
       email: user.email,
       createdAt: user.createdAt.toISOString(),

@@ -45,20 +45,18 @@ export class RegisterUserUseCase
       email: command.dto.email,
       password: hashedPassword,
       createdAt: new Date(),
-      emailConfirmation: {
-        confirmationCode: randomUUID(),
-        expirationDate: add(new Date(), {
-          hours: 1,
-        }),
-        isConfirmed: false,
-      },
+      confirmationCode: randomUUID(),
+      expirationDate: add(new Date(), {
+        hours: 1,
+      }),
+      isConfirmed: false,
     };
 
     const user = await this.authRepository.registerUser(userDto);
 
     await this.emailService.sendRegistrationEmail(
       userDto.email,
-      userDto.emailConfirmation.confirmationCode,
+      userDto.confirmationCode,
     );
 
     return user;
