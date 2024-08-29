@@ -16,7 +16,7 @@ export class ConfirmationRegistrationUserUseCase
     const findUser = await this.authRepository.getByConfirmationCode(
       command.code,
     );
-    if (!findUser || findUser.emailConfirmation.isConfirmed === true) {
+    if (!findUser || findUser.isConfirmed === true) {
       throw new BadRequestException([
         {
           message:
@@ -25,6 +25,6 @@ export class ConfirmationRegistrationUserUseCase
         },
       ]);
     }
-    return await this.authRepository.updateConfirmation(findUser._id);
+    return await this.authRepository.updateConfirmation(findUser.id);
   }
 }
