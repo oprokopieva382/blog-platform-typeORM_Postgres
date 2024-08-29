@@ -22,36 +22,61 @@ export class AuthRepository {
     @InjectDataSource() private dataSource: DataSource,
   ) {}
 
-  async getByLoginOrEmail(login: string, email: string) {
-    return await this.UserModel.findOne({
-      $or: [{ email }, { login }],
-    });
-  }
-
   async getByLogin(login: string) {
-    return await this.UserModel.findOne({ login });
+    const query = `
+    SELECT u.login, u.id 
+    FROM "User" u
+    WHERE u.login = $1
+    `;
+
+    const result = await this.dataSource.query(query, [login]);
+    return result[0];
   }
 
   async getByEmail(email: string) {
-    return await this.UserModel.findOne({ email });
+    const query = `
+    SELECT u.email, u.id 
+    FROM "User" u
+    WHERE u.email = $1
+    `;
+
+    const result = await this.dataSource.query(query, [email]);
+    return result[0];
   }
 
   async getByConfirmationCode(code: string) {
-    return await this.UserModel.findOne({
-      'emailConfirmation.confirmationCode': code,
-    });
+    // return await this.UserModel.findOne({
+    //   'emailConfirmation.confirmationCode': code,
+    // });
+    const query = `
+    SELECT u.confirmationCode, u.id, u.isConfirmed
+    FROM "User" u
+    WHERE u.confirmationCode = $1
+    `;
+
+    const result = await this.dataSource.query(query, [code]);
+    return result[0];
   }
 
   async getByRecoveryCode(recoveryCode: string) {
     return await this.PasswordRecoveryCodeModel.findOne({ recoveryCode });
   }
 
-  async updateConfirmation(_id: Types.ObjectId) {
-    return await this.UserModel.findByIdAndUpdate(
-      { _id },
-      { $set: { 'emailConfirmation.isConfirmed': true } },
-      { new: true },
-    );
+  async updateConfirmation(id: string) {
+    // return await this.UserModel.findByIdAndUpdate(
+    //   { _id },
+    //   { $set: { 'emailConfirmation.isConfirmed': true } },
+    //   { new: true },
+    // );
+    const query = `
+UPDATE "User" u
+SET "isConfirmed" = true
+WHERE u.id = $1
+RETURNING *
+`;
+
+    const result = this.dataSource.query(query, [id]);
+    return result[0];
   }
 
   async updateCode(_id: Types.ObjectId, newCode: string) {
@@ -66,7 +91,22 @@ export class AuthRepository {
   }
 
   async registerUser(dto: UserDBType) {
-  const query = `
+    const createTableQuery = `
+  CREATE TABLE IF NOT EXISTS public."User" (
+    id UUID PRIMARY KEY NOT NULL DEFAULT gen_random_uuid(),
+    login VARCHAR(10) NOT NULL,
+    email VARCHAR(30) NOT NULL,
+    password VARCHAR(20) NOT NULL,
+    "createdAt" TIMESTAMP NOT NULL,
+    "confirmationCode" UUID NOT NULL DEFAULT gen_random_uuid(),
+    "expirationDate" TIMESTAMP NOT NULL,
+    "isConfirmed" BOOLEAN NOT NULL DEFAULT false
+  );
+  `;
+
+    await this.dataSource.query(createTableQuery);
+
+    const query = `
   INSERT INTO "User" ("login", "email", "password", "createdAt", "confirmationCode", "expirationDate", "isConfirmed")
   VALUES ($1, $2, $3, $4, $5, $6, $7)
   RETURNING *;
@@ -83,7 +123,7 @@ export class AuthRepository {
     ];
 
     const result = await this.dataSource.query(query, values);
-    return result[0]
+    return result[0];
   }
 
   async savePasswordRecoveryInfo(passwordRecovery: PasswordRecoveryCode) {
